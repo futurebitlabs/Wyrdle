@@ -13,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Wordly",
-  description: "Wordly",
+  title: "Wyrdle",
+  description:
+    "Wyrdle is a multiplayer word-guessing game — create a game, share the key, and race your friends to crack the same word.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

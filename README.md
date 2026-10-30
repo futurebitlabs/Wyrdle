@@ -1,6 +1,6 @@
-Wordly is a multiplayer Wordle-style game. One player creates a game and gets
-a 6-character game key; others join with that key and race to guess the same
-secret word.
+Wyrdle is a multiplayer word-guessing game. One player creates a game and
+gets a 6-character game key; others join with that key and race to guess
+the same secret word.
 
 ## Setup
 

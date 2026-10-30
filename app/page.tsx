@@ -64,10 +64,10 @@ export default function Home() {
     <div className="flex flex-1 items-center justify-center bg-background px-4 py-16">
       <div className="w-full max-w-sm space-y-10">
         <div className="text-center">
-          <h1 className="text-4xl font-bold tracking-tight text-foreground">Wordly</h1>
+          <h1 className="text-4xl font-bold tracking-tight text-foreground">Wyrdle</h1>
           <p className="mt-2 text-sm text-foreground/60">
-            A multiplayer word-guessing game. Create a game and share the key,
-            or join one with a key a friend gave you.
+            A multiplayer word race. Share a key, guess together, see who&apos;s
+            fastest.
           </p>
         </div>
 
