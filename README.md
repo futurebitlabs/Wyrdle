@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+Wordly is a multiplayer Wordle-style game. One player creates a game and gets
+a 6-character game key; others join with that key and race to guess the same
+secret word.
 
-## Getting Started
+## Setup
 
-First, run the development server:
+1. Create a free project at [supabase.com](https://supabase.com).
+2. In the Supabase SQL editor, run [`supabase/schema.sql`](supabase/schema.sql)
+   — it creates the `rooms`, `players`, `rounds`, `round_state`, and `guesses`
+   tables and turns on realtime for `players`/`round_state`/`guesses`. If
+   you've run an older version of this file before, re-running it drops and
+   recreates everything (fine for a dev project; it only loses test rooms).
+3. Copy `.env.local.example` to `.env.local` and fill in your project's URL
+   and keys (Project Settings → API in the Supabase dashboard):
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+   ```bash
+   cp .env.local.example .env.local
+   ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+   - `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — used by the
+     browser for realtime updates and reading players/guesses.
+   - `SUPABASE_SERVICE_ROLE_KEY` — used only server-side (API routes) to read
+     and write the secret word; never exposed to the browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+4. Run the dev server:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+   ```bash
+   npm run dev
+   ```
 
-## Learn More
+   Open two browser windows at [http://localhost:3000](http://localhost:3000)
+   to try it with "multiple players."
 
-To learn more about Next.js, take a look at the following resources:
+## How it works
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- **Create a game** → `POST /api/rooms` picks a random word, generates a game
+  key, and makes you the host.
+- **Join a game** → `POST /api/rooms/[code]/join` with the game key adds you
+  as a player in that room.
+- **Guess** → `POST /api/rooms/[code]/guess` scores your guess server-side
+  (the secret word is never sent to the browser until you finish) and stores
+  it in Supabase.
+- Everyone in the room sees live guess counts and standings via Supabase
+  Realtime — no custom WebSocket server needed.
+- Each player has their own board and guesses independently within a round,
+  but the **round ends for everyone the instant any player solves it** (or
+  everyone runs out of guesses) — this is pushed live via the `round_state`
+  table, which starts each round with `word` set to `null` and only fills it
+  in (for every client to see) the moment the round actually finishes.
+- The host can start a new round ("Play again") with a fresh word; win counts
+  accumulate across rounds in the same room and drive the leaderboard
+  ranking.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploying
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Push to GitHub and import the repo on [Vercel](https://vercel.com/new) (free
+tier works). Add the same three environment variables from `.env.local` in
+the Vercel project settings.

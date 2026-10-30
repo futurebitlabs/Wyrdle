@@ -24,3 +24,9 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Mobile browsers otherwise wait ~300ms after a tap in case it's the start
+   of a double-tap-to-zoom gesture, which makes every button feel laggy. */
+button {
+  touch-action: manipulation;
+}
