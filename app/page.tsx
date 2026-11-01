@@ -11,26 +11,20 @@ export default function Home() {
   const router = useRouter();
   const [mode, setMode] = useState<Mode>("solo");
 
-  const [soloName, setSoloName] = useState("");
   const [createName, setCreateName] = useState("");
   const [joinName, setJoinName] = useState("");
   const [joinCode, setJoinCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState<"solo" | "create" | "join" | null>(null);
 
-  async function handleSolo(e: React.FormEvent) {
-    e.preventDefault();
-    if (!soloName.trim()) {
-      setError("Enter your name first");
-      return;
-    }
+  async function handleSolo() {
     setPending("solo");
     setError(null);
     try {
       const data = await postJson<{
         room: { code: string };
         player: { id: string; name: string };
-      }>("/api/rooms", { name: soloName.trim() });
+      }>("/api/rooms", { name: "Player" });
       savePlayer(data.room.code, { playerId: data.player.id, name: data.player.name });
       router.push(`/room/${data.room.code}?solo=1`);
     } catch (err) {
@@ -128,25 +122,17 @@ export default function Home() {
         </div>
 
         {mode === "solo" ? (
-          <form onSubmit={handleSolo} className="space-y-3 rounded-lg border border-foreground/10 p-5">
+          <div className="space-y-3 rounded-lg border border-foreground/10 p-5">
             <h2 className="font-semibold text-foreground">Play solo</h2>
-            <input
-              value={soloName}
-              onChange={(e) => setSoloName(e.target.value)}
-              placeholder="Your name"
-              maxLength={24}
-              required
-              autoFocus
-              className="w-full rounded-md border border-foreground/15 bg-transparent px-3 py-2 text-foreground outline-none focus:border-foreground/40"
-            />
             <button
-              type="submit"
+              type="button"
+              onClick={handleSolo}
               disabled={pending !== null}
               className="w-full rounded-md bg-foreground px-4 py-2 font-medium text-background transition-opacity disabled:opacity-50"
             >
               {pending === "solo" ? "Starting…" : "Play solo"}
             </button>
-          </form>
+          </div>
         ) : (
           <div className="space-y-8">
             <form onSubmit={handleCreate} className="space-y-3 rounded-lg border border-foreground/10 p-5">
