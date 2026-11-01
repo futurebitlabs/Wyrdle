@@ -249,13 +249,21 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
     return set;
   }, [currentFound]);
 
-  const foundPaths = useMemo(() => {
+  const foundColorById = useMemo(() => {
     const sorted = [...currentFound].sort((a, b) => a.foundAt.localeCompare(b.foundAt));
-    return sorted.map((f, i) => ({
-      path: f.path,
-      color: FOUND_WORD_COLORS[i % FOUND_WORD_COLORS.length],
-    }));
+    const map = new Map<string, string>();
+    sorted.forEach((f, i) => map.set(f.id, FOUND_WORD_COLORS[i % FOUND_WORD_COLORS.length]));
+    return map;
   }, [currentFound]);
+
+  const foundPaths = useMemo(
+    () =>
+      currentFound.map((f) => ({
+        path: f.path,
+        color: foundColorById.get(f.id) ?? FOUND_WORD_COLORS[0],
+      })),
+    [currentFound, foundColorById],
+  );
 
   const foundByPlayer = useMemo(() => {
     const map = new Map<string, WendFoundWord[]>();
@@ -392,7 +400,7 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
   const allWordsFound = currentFound.length >= currentRound.wordLengths.length;
 
   return (
-    <div className="flex flex-1 flex-col items-center gap-6 bg-background px-4 py-8">
+    <div className="flex flex-1 flex-col bg-background px-4 pb-8 pt-5">
       {banner && (
         <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
           <p className="rounded-full bg-foreground px-4 py-2 text-sm font-medium text-background shadow-lg">
@@ -401,48 +409,22 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
         </div>
       )}
 
-      <div className="text-center">
-        <p className="text-xs uppercase tracking-wide text-foreground/50">
-          {isSolo ? "Playing solo · " : "Game key · "}Level {currentRound.levelNumber}
-        </p>
-        <p className="font-mono text-2xl font-bold tracking-widest text-foreground">{room.code}</p>
-        {isSolo && <p className="mt-1 text-xs text-foreground/40">Share this key to invite others</p>}
+      <div className="flex w-full items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-foreground/40">
+            {isSolo ? "Solo" : "Game key"} · Level {currentRound.levelNumber}
+          </p>
+          <p className="font-mono text-lg font-bold tracking-widest text-foreground">{room.code}</p>
+        </div>
+        {isSolo && (
+          <p className="max-w-[45%] text-right text-[11px] leading-tight text-foreground/40">
+            Share this key to invite others
+          </p>
+        )}
       </div>
 
-      {isGameOver && (
-        <div className="flex flex-col items-center gap-3 rounded-lg border border-foreground/10 px-6 py-4 text-center">
-          <p className="text-sm text-foreground/80">
-            {isSolo
-              ? "Level cleared!"
-              : winner
-                ? (
-                    <>
-                      <span className="font-semibold">{winner.name}</span> found the most words!
-                    </>
-                  )
-                : "Round over."}
-          </p>
-          {currentRound.words && (
-            <p className="text-xs text-foreground/50">
-              Words: <span className="uppercase">{currentRound.words.join(", ")}</span>
-            </p>
-          )}
-          {player.isHost ? (
-            <button
-              onClick={handlePlayAgain}
-              disabled={startingRound}
-              className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background disabled:opacity-50"
-            >
-              {startingRound ? "Starting…" : isSolo ? "Next level" : "Play again"}
-            </button>
-          ) : (
-            <p className="text-xs text-foreground/50">Waiting for the host to start the next round…</p>
-          )}
-        </div>
-      )}
-
-      <div className="flex w-full flex-col items-center gap-6 md:flex-row md:items-start md:justify-center">
-        <div className="flex w-full max-w-sm flex-col items-center gap-4">
+      <div className="mt-6 flex flex-1 flex-col items-center gap-8 md:flex-row md:items-start md:justify-center">
+        <div className="w-full max-w-[300px] space-y-4 rounded-3xl bg-foreground/[0.03] p-4">
           <WendBoard
             cells={currentRound.cells}
             gridSize={currentRound.gridSize}
@@ -458,21 +440,22 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
             found={currentFound}
             players={players}
             showNames={!isSolo}
+            colorById={foundColorById}
           />
 
           {!isGameOver && !allWordsFound && (
-            <div className="flex gap-2">
+            <div className="flex justify-center gap-2">
               <button
                 onClick={handleUndo}
                 disabled={myFoundCount === 0 || undoing}
-                className="rounded-full border border-foreground/20 px-4 py-1.5 text-sm font-medium text-foreground disabled:opacity-50"
+                className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm font-medium text-foreground transition-opacity disabled:opacity-40"
               >
                 {undoing ? "Undoing…" : "Undo"}
               </button>
               <button
                 onClick={getHint}
                 disabled={hintPending || Boolean(hint)}
-                className="rounded-full border border-foreground/20 px-4 py-1.5 text-sm font-medium text-foreground disabled:opacity-50"
+                className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm font-medium text-foreground transition-opacity disabled:opacity-40"
               >
                 {hintPending ? "Getting hint…" : hint ? "Hint used" : "Get a hint"}
               </button>
@@ -489,6 +472,41 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
           />
         )}
       </div>
+
+      {isGameOver && (
+        <div className="mt-6 flex items-end justify-between gap-4">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground/80">
+              {isSolo
+                ? "Level cleared!"
+                : winner
+                  ? (
+                      <>
+                        <span className="font-semibold">{winner.name}</span> found the most words!
+                      </>
+                    )
+                  : "Round over."}
+            </p>
+            {currentRound.words && (
+              <p className="mt-0.5 text-xs text-foreground/50">
+                Words: <span className="uppercase">{currentRound.words.join(", ")}</span>
+              </p>
+            )}
+            {!player.isHost && (
+              <p className="mt-0.5 text-xs text-foreground/50">Waiting for the host…</p>
+            )}
+          </div>
+          {player.isHost && (
+            <button
+              onClick={handlePlayAgain}
+              disabled={startingRound}
+              className="shrink-0 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-opacity disabled:opacity-50"
+            >
+              {startingRound ? "Starting…" : isSolo ? "Next level" : "Play again"}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -498,37 +516,67 @@ function WordSlots({
   found,
   players,
   showNames,
+  colorById,
 }: {
   wordLengths: number[];
   found: WendFoundWord[];
   players: PlayerInfo[];
   showNames: boolean;
+  colorById: Map<string, string>;
 }) {
   const sortedFound = [...found].sort((a, b) => a.word.length - b.word.length);
-  const remainingLengths = wordLengths.slice(sortedFound.length).sort((a, b) => a - b);
+
+  // Remaining lengths = the round's word lengths minus one entry per found
+  // word's own length (not just a count-based slice, which breaks if a
+  // longer word is found before a shorter one).
+  const lengthCounts = new Map<number, number>();
+  for (const len of wordLengths) lengthCounts.set(len, (lengthCounts.get(len) ?? 0) + 1);
+  for (const f of found) {
+    const remaining = lengthCounts.get(f.word.length) ?? 0;
+    if (remaining > 0) lengthCounts.set(f.word.length, remaining - 1);
+  }
+  const remainingLengths: number[] = [];
+  for (const [len, count] of lengthCounts) {
+    for (let i = 0; i < count; i++) remainingLengths.push(len);
+  }
+  remainingLengths.sort((a, b) => a - b);
 
   function nameFor(playerId: string) {
     return players.find((p) => p.id === playerId)?.name ?? "?";
   }
 
   return (
-    <div className="flex w-full flex-wrap justify-center gap-2">
-      {sortedFound.map((f) => (
-        <span
-          key={f.id}
-          className="rounded-full bg-emerald-600/20 px-3 py-1 text-sm font-semibold uppercase text-emerald-700 dark:text-emerald-400"
-        >
-          {f.word}
-          {showNames && <span className="ml-1 text-xs font-normal opacity-70">· {nameFor(f.playerId)}</span>}
-        </span>
-      ))}
+    <div className="flex w-full flex-col items-start gap-1.5">
+      {sortedFound.map((f) => {
+        const color = colorById.get(f.id) ?? "#3b82f6";
+        return (
+          <div key={f.id} className="flex items-center gap-2">
+            <div className="flex gap-1">
+              {f.word.split("").map((ch, i) => (
+                <span
+                  key={i}
+                  style={{ backgroundColor: color }}
+                  className="flex h-6 w-6 items-center justify-center rounded text-xs font-bold uppercase text-white"
+                >
+                  {ch}
+                </span>
+              ))}
+            </div>
+            {showNames && (
+              <span className="text-[11px] text-foreground/50">{nameFor(f.playerId)}</span>
+            )}
+          </div>
+        );
+      })}
       {remainingLengths.map((len, i) => (
-        <span
-          key={`blank-${i}`}
-          className="rounded-full border border-dashed border-foreground/20 px-3 py-1 text-sm text-foreground/40"
-        >
-          {"_ ".repeat(len).trim()}
-        </span>
+        <div key={`blank-${i}`} className="flex gap-1">
+          {Array.from({ length: len }).map((_, j) => (
+            <span
+              key={j}
+              className="h-6 w-6 rounded border border-dashed border-foreground/15"
+            />
+          ))}
+        </div>
       ))}
     </div>
   );
