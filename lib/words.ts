@@ -229,7 +229,6 @@ export const WORDS: readonly string[] = [
   "juice",
   "knife",
   "laser",
-  "latin",
   "laugh",
   "layer",
   "learn",

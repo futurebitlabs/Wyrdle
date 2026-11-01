@@ -1,3 +1,5 @@
+<img src="public/logo.svg" alt="Wyrdle" height="48">
+
 Wyrdle is a multiplayer word-guessing game. One player creates a game and
 gets a 6-character game key; others join with that key and race to guess
 the same secret word.

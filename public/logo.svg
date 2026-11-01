@@ -1,0 +1,6 @@
+<svg width="330" height="100" viewBox="0 0 330 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Wyrdle">
+  <rect x="68" y="68" width="27" height="27" rx="6" fill="#f59e0b"/>
+  <rect x="10" y="10" width="76" height="76" rx="16" fill="#059669"/>
+  <text x="48" y="65" font-family="Arial, Helvetica, sans-serif" font-size="42" font-weight="700" fill="#ffffff" text-anchor="middle">W</text>
+  <text x="100" y="63" font-family="Arial, Helvetica, sans-serif" font-size="46" font-weight="700" fill="#171717" text-anchor="start">yrdle</text>
+</svg>

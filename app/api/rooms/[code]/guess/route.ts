@@ -1,12 +1,15 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { evaluateGuess, isWinningResult } from "@/lib/wordle";
+import { WORDS } from "@/lib/words";
+import { VALID_GUESSES } from "@/lib/validGuesses";
 
-// Secret words always come from the curated list in lib/words.ts, but guesses
-// accept any alphabetic word of the right length — the curated list is only
-// ~500 words, far short of a full dictionary, so restricting guesses to it
-// rejects plenty of real words (e.g. "aisle").
-const ALPHA_ONLY = /^[a-z]+$/;
+// Secret words always come from the small curated list in lib/words.ts (so
+// answers stay common/guessable), but accepted guesses come from the much
+// larger dictionary in lib/validGuesses.ts — otherwise real words outside
+// the curated list (e.g. "aisle") get wrongly rejected, and restricting to
+// "any letters" instead lets nonsense strings like "asdfg" through.
+const DICTIONARY = new Set([...WORDS, ...VALID_GUESSES]);
 
 export async function POST(
   request: Request,
@@ -41,8 +44,8 @@ export async function POST(
     );
   }
 
-  if (!ALPHA_ONLY.test(guess)) {
-    return NextResponse.json({ error: "Letters only" }, { status: 400 });
+  if (!DICTIONARY.has(guess)) {
+    return NextResponse.json({ error: "Not a recognized word" }, { status: 400 });
   }
 
   // Player membership and the active round are independent of each other —
