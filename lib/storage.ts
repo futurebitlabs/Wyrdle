@@ -22,3 +22,23 @@ export function loadPlayer(code: string): StoredPlayer | null {
     return null;
   }
 }
+
+const WEND_LEVEL_KEY = "wordly:wend:level";
+
+export function loadWendLevel(): number {
+  try {
+    const raw = localStorage.getItem(WEND_LEVEL_KEY);
+    const n = raw ? parseInt(raw, 10) : 1;
+    return Number.isFinite(n) && n >= 1 ? n : 1;
+  } catch {
+    return 1;
+  }
+}
+
+export function saveWendLevel(level: number) {
+  try {
+    localStorage.setItem(WEND_LEVEL_KEY, String(level));
+  } catch {
+    // ignore
+  }
+}

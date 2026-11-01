@@ -1,8 +1,12 @@
 import type { GuessResult } from "./wordle";
+import type { WendCell } from "./wend/generate";
+
+export type GameType = "wyrdle" | "wend";
 
 export interface RoomInfo {
   id: string;
   code: string;
+  gameType: GameType;
   wordLength: number;
   maxGuesses: number;
 }
@@ -35,4 +39,28 @@ export interface GuessRow {
   result: GuessResult;
   isCorrect: boolean;
   createdAt: string;
+}
+
+export interface WendRoundInfo {
+  roundId: string;
+  roomId: string;
+  roundNumber: number;
+  levelNumber: number;
+  status: RoundStatus;
+  gridSize: number;
+  cells: WendCell[][];
+  wordLengths: number[];
+  words: string[] | null;
+  winnerPlayerId: string | null;
+  startedAt: string;
+  finishedAt: string | null;
+}
+
+export interface WendFoundWord {
+  id: string;
+  roundId: string;
+  playerId: string;
+  word: string;
+  path: [number, number][];
+  foundAt: string;
 }

@@ -7,6 +7,9 @@
 
 create extension if not exists pgcrypto;
 
+drop table if exists wend_found_words cascade;
+drop table if exists wend_state cascade;
+drop table if exists wend_puzzles cascade;
 drop table if exists hints cascade;
 drop table if exists guesses cascade;
 drop table if exists round_state cascade;
@@ -17,6 +20,7 @@ drop table if exists rooms cascade;
 create table rooms (
   id uuid primary key default gen_random_uuid(),
   code text unique not null,
+  game_type text not null default 'wyrdle' check (game_type in ('wyrdle', 'wend')),
   word_length int not null default 5,
   max_guesses int not null default 6,
   created_at timestamptz not null default now()
@@ -80,6 +84,64 @@ create table hints (
   primary key (round_id, player_id)
 );
 
+-- Server-only: the full generated Wend grid plus the secret word->path
+-- mapping. Never exposed to the browser (no RLS policy for anon at all) —
+-- `wend_state.cells` below is the public copy players actually see.
+create table wend_puzzles (
+  id uuid primary key default gen_random_uuid(),
+  room_id uuid not null references rooms(id) on delete cascade,
+  round_number int not null,
+  level_number int not null,
+  grid_size int not null,
+  cells jsonb not null,
+  words jsonb not null,
+  created_at timestamptz not null default now(),
+  unique (room_id, round_number)
+);
+
+-- Public mirror for realtime: the grid's letters/blocked layout are visible
+-- from the start (that's the puzzle), but the actual word list stays null
+-- until the round finishes, when the server fills it in for everyone to
+-- review — same pattern as round_state.word for Wyrdle.
+create table wend_state (
+  round_id uuid primary key references wend_puzzles(id) on delete cascade,
+  room_id uuid not null references rooms(id) on delete cascade,
+  round_number int not null,
+  level_number int not null,
+  status text not null default 'active' check (status in ('active', 'finished')),
+  grid_size int not null,
+  cells jsonb not null,
+  word_lengths jsonb not null,
+  words jsonb,
+  winner_player_id uuid references players(id) on delete set null,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz
+);
+
+-- Public: words claimed so far this round, visible to everyone immediately
+-- so a word someone else found instantly locks for the whole room.
+create table wend_found_words (
+  id uuid primary key default gen_random_uuid(),
+  round_id uuid not null references wend_puzzles(id) on delete cascade,
+  room_id uuid not null references rooms(id) on delete cascade,
+  player_id uuid not null references players(id) on delete cascade,
+  word text not null,
+  path jsonb not null,
+  found_at timestamptz not null default now(),
+  unique (round_id, word)
+);
+
+-- Server-only: one hint per player per Wend round, revealing the [row, col]
+-- of the first tile of a random unfound word.
+create table wend_hints (
+  round_id uuid not null references wend_puzzles(id) on delete cascade,
+  player_id uuid not null references players(id) on delete cascade,
+  row int not null,
+  col int not null,
+  created_at timestamptz not null default now(),
+  primary key (round_id, player_id)
+);
+
 -- Row Level Security: the server (service role key) bypasses RLS and does
 -- all writes. `rooms` and `rounds` have no anon policy at all, so the
 -- secret word is never readable by the browser. `players`, `round_state`
@@ -90,12 +152,20 @@ alter table rounds enable row level security;
 alter table round_state enable row level security;
 alter table guesses enable row level security;
 alter table hints enable row level security;
+alter table wend_puzzles enable row level security;
+alter table wend_state enable row level security;
+alter table wend_found_words enable row level security;
+alter table wend_hints enable row level security;
 
 create policy "players are readable" on players for select using (true);
 create policy "round_state is readable" on round_state for select using (true);
 create policy "guesses are readable" on guesses for select using (true);
+create policy "wend_state is readable" on wend_state for select using (true);
+create policy "wend_found_words is readable" on wend_found_words for select using (true);
 
 -- Enable realtime so the browser gets live inserts/updates.
 alter publication supabase_realtime add table players;
 alter publication supabase_realtime add table round_state;
 alter publication supabase_realtime add table guesses;
+alter publication supabase_realtime add table wend_state;
+alter publication supabase_realtime add table wend_found_words;

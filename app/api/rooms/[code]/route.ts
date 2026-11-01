@@ -10,7 +10,7 @@ export async function GET(
 
   const { data: room, error } = await supabase
     .from("rooms")
-    .select("id, code, word_length, max_guesses")
+    .select("id, code, game_type, word_length, max_guesses")
     .eq("code", code.toUpperCase())
     .single();
 
@@ -22,6 +22,7 @@ export async function GET(
     room: {
       id: room.id,
       code: room.code,
+      gameType: room.game_type,
       wordLength: room.word_length,
       maxGuesses: room.max_guesses,
     },

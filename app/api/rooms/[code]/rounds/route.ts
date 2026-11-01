@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServiceClient } from "@/lib/supabase/server";
 import { createRound } from "@/lib/supabase/rounds";
+import { createWendRound } from "@/lib/supabase/wendRounds";
 
 export async function POST(
   request: Request,
@@ -9,6 +10,8 @@ export async function POST(
   const { code } = await params;
   const body = await request.json().catch(() => null);
   const playerId = typeof body?.playerId === "string" ? body.playerId : null;
+  const level =
+    typeof body?.level === "number" && Number.isFinite(body.level) ? body.level : null;
 
   if (!playerId) {
     return NextResponse.json({ error: "playerId is required" }, { status: 400 });
@@ -18,7 +21,7 @@ export async function POST(
 
   const { data: room, error: roomError } = await supabase
     .from("rooms")
-    .select("id")
+    .select("id, game_type")
     .eq("code", code.toUpperCase())
     .single();
 
@@ -41,8 +44,10 @@ export async function POST(
     return NextResponse.json({ error: "Only the host can start a new round" }, { status: 403 });
   }
 
+  const stateTable = room.game_type === "wend" ? "wend_state" : "round_state";
+
   const { data: active } = await supabase
-    .from("round_state")
+    .from(stateTable)
     .select("round_id")
     .eq("room_id", room.id)
     .eq("status", "active")
@@ -53,7 +58,7 @@ export async function POST(
   }
 
   const { data: latest } = await supabase
-    .from("round_state")
+    .from(stateTable)
     .select("round_number")
     .eq("room_id", room.id)
     .order("round_number", { ascending: false })
@@ -63,7 +68,10 @@ export async function POST(
   const nextRoundNumber = (latest?.round_number ?? 0) + 1;
 
   try {
-    const round = await createRound(supabase, room.id, nextRoundNumber);
+    const round =
+      room.game_type === "wend"
+        ? await createWendRound(supabase, room.id, nextRoundNumber, level)
+        : await createRound(supabase, room.id, nextRoundNumber);
     return NextResponse.json({ round });
   } catch (err) {
     console.error("Failed to create round", err);
