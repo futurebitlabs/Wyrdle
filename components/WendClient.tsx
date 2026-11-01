@@ -4,10 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { getSupabaseClient } from "@/lib/supabase/client";
 import { loadPlayer, savePlayer, saveWendLevel } from "@/lib/storage";
 import { postJson } from "@/lib/postJson";
-import type { PlayerInfo, RoomInfo, RoundStatus, WendFoundWord, WendRoundInfo } from "@/lib/types";
+import type {
+  PlayerInfo,
+  RoomInfo,
+  RoundStatus,
+  WendFoundWord,
+  WendRoundInfo,
+} from "@/lib/types";
 import type { WendCell } from "@/lib/wend/generate";
 import { WendBoard } from "./WendBoard";
 import { WendLeaderboard } from "./WendLeaderboard";
+import { HomeButton } from "./HomeButton";
 
 type Status = "loading" | "needs-name" | "ready" | "not-found";
 
@@ -84,7 +91,13 @@ function toFoundWord(row: WendFoundWordRow): WendFoundWord {
   };
 }
 
-export function WendClient({ code, solo = false }: { code: string; solo?: boolean }) {
+export function WendClient({
+  code,
+  solo = false,
+}: {
+  code: string;
+  solo?: boolean;
+}) {
   const [status, setStatus] = useState<Status>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -101,7 +114,10 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
 
   const joinRoom = useCallback(
     (payload: { name?: string; playerId?: string }) =>
-      postJson<{ room: RoomInfo; player: PlayerInfo }>(`/api/rooms/${code}/join`, payload),
+      postJson<{ room: RoomInfo; player: PlayerInfo }>(
+        `/api/rooms/${code}/join`,
+        payload,
+      ),
     [code],
   );
 
@@ -155,7 +171,10 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
 
     async function loadInitialState() {
       const [playersRes, roundsRes, foundRes] = await Promise.all([
-        supabase.from("players").select("id, name, is_host").eq("room_id", room!.id),
+        supabase
+          .from("players")
+          .select("id, name, is_host")
+          .eq("room_id", room!.id),
         supabase
           .from("wend_state")
           .select("*")
@@ -164,9 +183,12 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
         supabase.from("wend_found_words").select("*").eq("room_id", room!.id),
       ]);
       if (cancelled) return;
-      if (playersRes.data) setPlayers((playersRes.data as PlayerRow[]).map(toPlayerInfo));
-      if (roundsRes.data) setRounds((roundsRes.data as WendStateRow[]).map(toRoundInfo));
-      if (foundRes.data) setFound((foundRes.data as WendFoundWordRow[]).map(toFoundWord));
+      if (playersRes.data)
+        setPlayers((playersRes.data as PlayerRow[]).map(toPlayerInfo));
+      if (roundsRes.data)
+        setRounds((roundsRes.data as WendStateRow[]).map(toRoundInfo));
+      if (foundRes.data)
+        setFound((foundRes.data as WendFoundWordRow[]).map(toFoundWord));
     }
 
     loadInitialState();
@@ -175,39 +197,72 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
       .channel(`wend-room:${room.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "players", filter: `room_id=eq.${room.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "players",
+          filter: `room_id=eq.${room.id}`,
+        },
         (payload) => {
           const row = toPlayerInfo(payload.new as PlayerRow);
-          setPlayers((prev) => (prev.some((p) => p.id === row.id) ? prev : [...prev, row]));
+          setPlayers((prev) =>
+            prev.some((p) => p.id === row.id) ? prev : [...prev, row],
+          );
         },
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "wend_state", filter: `room_id=eq.${room.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "wend_state",
+          filter: `room_id=eq.${room.id}`,
+        },
         (payload) => {
           const row = toRoundInfo(payload.new as WendStateRow);
-          setRounds((prev) => (prev.some((r) => r.roundId === row.roundId) ? prev : [...prev, row]));
+          setRounds((prev) =>
+            prev.some((r) => r.roundId === row.roundId) ? prev : [...prev, row],
+          );
         },
       )
       .on(
         "postgres_changes",
-        { event: "UPDATE", schema: "public", table: "wend_state", filter: `room_id=eq.${room.id}` },
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "wend_state",
+          filter: `room_id=eq.${room.id}`,
+        },
         (payload) => {
           const row = toRoundInfo(payload.new as WendStateRow);
-          setRounds((prev) => prev.map((r) => (r.roundId === row.roundId ? row : r)));
+          setRounds((prev) =>
+            prev.map((r) => (r.roundId === row.roundId ? row : r)),
+          );
         },
       )
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "wend_found_words", filter: `room_id=eq.${room.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "wend_found_words",
+          filter: `room_id=eq.${room.id}`,
+        },
         (payload) => {
           const row = toFoundWord(payload.new as WendFoundWordRow);
-          setFound((prev) => (prev.some((f) => f.id === row.id) ? prev : [...prev, row]));
+          setFound((prev) =>
+            prev.some((f) => f.id === row.id) ? prev : [...prev, row],
+          );
         },
       )
       .on(
         "postgres_changes",
-        { event: "DELETE", schema: "public", table: "wend_found_words", filter: `room_id=eq.${room.id}` },
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "wend_found_words",
+          filter: `room_id=eq.${room.id}`,
+        },
         (payload) => {
           const old = payload.old as { id?: string };
           if (old.id) setFound((prev) => prev.filter((f) => f.id !== old.id));
@@ -224,13 +279,16 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
   const currentRound = useMemo(
     () =>
       rounds.reduce<WendRoundInfo | null>(
-        (latest, r) => (!latest || r.roundNumber > latest.roundNumber ? r : latest),
+        (latest, r) =>
+          !latest || r.roundNumber > latest.roundNumber ? r : latest,
         null,
       ),
     [rounds],
   );
 
-  const [hintRoundId, setHintRoundId] = useState<string | undefined>(currentRound?.roundId);
+  const [hintRoundId, setHintRoundId] = useState<string | undefined>(
+    currentRound?.roundId,
+  );
   if (currentRound?.roundId !== hintRoundId) {
     setHintRoundId(currentRound?.roundId);
     setHint(null);
@@ -250,9 +308,13 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
   }, [currentFound]);
 
   const foundColorById = useMemo(() => {
-    const sorted = [...currentFound].sort((a, b) => a.foundAt.localeCompare(b.foundAt));
+    const sorted = [...currentFound].sort((a, b) =>
+      a.foundAt.localeCompare(b.foundAt),
+    );
     const map = new Map<string, string>();
-    sorted.forEach((f, i) => map.set(f.id, FOUND_WORD_COLORS[i % FOUND_WORD_COLORS.length]));
+    sorted.forEach((f, i) =>
+      map.set(f.id, FOUND_WORD_COLORS[i % FOUND_WORD_COLORS.length]),
+    );
     return map;
   }, [currentFound]);
 
@@ -296,7 +358,10 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
     async (path: [number, number][]) => {
       if (!player || !currentRound || isGameOver) return;
       try {
-        await postJson(`/api/rooms/${code}/wend/find`, { playerId: player.id, path });
+        await postJson(`/api/rooms/${code}/wend/find`, {
+          playerId: player.id,
+          path,
+        });
       } catch (err) {
         setBanner(err instanceof Error ? err.message : "Not a hidden word");
         setTimeout(() => setBanner(null), 1500);
@@ -332,13 +397,18 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
     if (!player || isGameOver || myFoundCount === 0 || undoing) return;
     setUndoing(true);
     try {
-      const data = await postJson<{ removed: string }>(`/api/rooms/${code}/wend/undo`, {
-        playerId: player.id,
-      });
+      const data = await postJson<{ removed: string }>(
+        `/api/rooms/${code}/wend/undo`,
+        {
+          playerId: player.id,
+        },
+      );
       setFound((prev) => {
         const idx = [...prev]
           .reverse()
-          .findIndex((f) => f.playerId === player.id && f.word === data.removed);
+          .findIndex(
+            (f) => f.playerId === player.id && f.word === data.removed,
+          );
         if (idx === -1) return prev;
         const realIdx = prev.length - 1 - idx;
         return prev.filter((_, i) => i !== realIdx);
@@ -358,10 +428,15 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
       const nextLevel = isSolo
         ? Math.min((currentRound?.levelNumber ?? 1) + 1, 10)
         : undefined;
-      await postJson(`/api/rooms/${code}/rounds`, { playerId: player.id, level: nextLevel });
+      await postJson(`/api/rooms/${code}/rounds`, {
+        playerId: player.id,
+        level: nextLevel,
+      });
       if (isSolo && nextLevel) saveWendLevel(nextLevel);
     } catch (err) {
-      setBanner(err instanceof Error ? err.message : "Could not start new round");
+      setBanner(
+        err instanceof Error ? err.message : "Could not start new round",
+      );
       setTimeout(() => setBanner(null), 2000);
     } finally {
       setStartingRound(false);
@@ -369,13 +444,16 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
   }
 
   if (status === "loading") return <Centered>Loading…</Centered>;
-  if (status === "not-found") return <Centered>{errorMessage ?? `Game ${code} not found.`}</Centered>;
+  if (status === "not-found")
+    return <Centered>{errorMessage ?? `Game ${code} not found.`}</Centered>;
 
   if (status === "needs-name") {
     return (
       <Centered>
         <form onSubmit={handleNameSubmit} className="w-full max-w-xs space-y-3">
-          <h1 className="text-center text-2xl font-bold text-foreground">Join game {code}</h1>
+          <h1 className="text-center text-2xl font-bold text-foreground">
+            Join game {code}
+          </h1>
           <input
             autoFocus
             value={nameInput}
@@ -395,7 +473,8 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
     );
   }
 
-  if (!room || !player || !currentRound) return <Centered>Something went wrong.</Centered>;
+  if (!room || !player || !currentRound)
+    return <Centered>Something went wrong.</Centered>;
 
   const allWordsFound = currentFound.length >= currentRound.wordLengths.length;
 
@@ -410,11 +489,16 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
       )}
 
       <div className="flex w-full items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-medium uppercase tracking-wide text-foreground/40">
-            {isSolo ? "Solo" : "Game key"} · Level {currentRound.levelNumber}
-          </p>
-          <p className="font-mono text-lg font-bold tracking-widest text-foreground">{room.code}</p>
+        <div className="flex items-start gap-2">
+          <HomeButton />
+          <div>
+            <p className="text-[11px] font-medium uppercase tracking-wide text-foreground/40">
+              {isSolo ? "Solo" : "Game key"} · Level {currentRound.levelNumber}
+            </p>
+            <p className="font-mono text-lg font-bold tracking-widest text-foreground">
+              {room.code}
+            </p>
+          </div>
         </div>
         {isSolo && (
           <p className="max-w-[45%] text-right text-[11px] leading-tight text-foreground/40">
@@ -457,7 +541,11 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
                 disabled={hintPending || Boolean(hint)}
                 className="rounded-full border border-foreground/15 px-4 py-1.5 text-sm font-medium text-foreground transition-opacity disabled:opacity-40"
               >
-                {hintPending ? "Getting hint…" : hint ? "Hint used" : "Get a hint"}
+                {hintPending
+                  ? "Getting hint…"
+                  : hint
+                    ? "Hint used"
+                    : "Get a hint"}
               </button>
             </div>
           )}
@@ -477,23 +565,29 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
         <div className="mt-6 flex items-end justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium text-foreground/80">
-              {isSolo
-                ? "Level cleared!"
-                : winner
-                  ? (
-                      <>
-                        <span className="font-semibold">{winner.name}</span> found the most words!
-                      </>
-                    )
-                  : "Round over."}
+              {isSolo ? (
+                "Level cleared!"
+              ) : winner ? (
+                <>
+                  <span className="font-semibold">{winner.name}</span> found the
+                  most words!
+                </>
+              ) : (
+                "Round over."
+              )}
             </p>
             {currentRound.words && (
               <p className="mt-0.5 text-xs text-foreground/50">
-                Words: <span className="uppercase">{currentRound.words.join(", ")}</span>
+                Words:{" "}
+                <span className="uppercase">
+                  {currentRound.words.join(", ")}
+                </span>
               </p>
             )}
             {!player.isHost && (
-              <p className="mt-0.5 text-xs text-foreground/50">Waiting for the host…</p>
+              <p className="mt-0.5 text-xs text-foreground/50">
+                Waiting for the host…
+              </p>
             )}
           </div>
           {player.isHost && (
@@ -502,7 +596,11 @@ export function WendClient({ code, solo = false }: { code: string; solo?: boolea
               disabled={startingRound}
               className="shrink-0 rounded-full bg-foreground px-5 py-2.5 text-sm font-semibold text-background shadow-sm transition-opacity disabled:opacity-50"
             >
-              {startingRound ? "Starting…" : isSolo ? "Next level" : "Play again"}
+              {startingRound
+                ? "Starting…"
+                : isSolo
+                  ? "Next level"
+                  : "Play again"}
             </button>
           )}
         </div>
@@ -530,7 +628,8 @@ function WordSlots({
   // word's own length (not just a count-based slice, which breaks if a
   // longer word is found before a shorter one).
   const lengthCounts = new Map<number, number>();
-  for (const len of wordLengths) lengthCounts.set(len, (lengthCounts.get(len) ?? 0) + 1);
+  for (const len of wordLengths)
+    lengthCounts.set(len, (lengthCounts.get(len) ?? 0) + 1);
   for (const f of found) {
     const remaining = lengthCounts.get(f.word.length) ?? 0;
     if (remaining > 0) lengthCounts.set(f.word.length, remaining - 1);
@@ -563,7 +662,9 @@ function WordSlots({
               ))}
             </div>
             {showNames && (
-              <span className="text-[11px] text-foreground/50">{nameFor(f.playerId)}</span>
+              <span className="text-[11px] text-foreground/50">
+                {nameFor(f.playerId)}
+              </span>
             )}
           </div>
         );

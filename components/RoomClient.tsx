@@ -9,6 +9,7 @@ import type { LetterStatus } from "@/lib/wordle";
 import { GameBoard } from "./GameBoard";
 import { Keyboard } from "./Keyboard";
 import { Leaderboard } from "./Leaderboard";
+import { HomeButton } from "./HomeButton";
 
 type Status = "loading" | "needs-name" | "ready" | "not-found" | "error";
 
@@ -402,6 +403,10 @@ export function RoomClient({ code, solo = false }: { code: string; solo?: boolea
           </p>
         </div>
       )}
+
+      <div className="flex w-full justify-start">
+        <HomeButton />
+      </div>
 
       <div className="text-center">
         <p className="text-xs uppercase tracking-wide text-foreground/50">
