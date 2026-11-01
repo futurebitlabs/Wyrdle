@@ -1,9 +1,11 @@
 import { Suspense } from "react";
 import { RoomClient } from "@/components/RoomClient";
 
-async function RoomPageInner({ params }: PageProps<"/room/[code]">) {
+async function RoomPageInner({ params, searchParams }: PageProps<"/room/[code]">) {
   const { code } = await params;
-  return <RoomClient code={code.toUpperCase()} />;
+  const query = await searchParams;
+  const solo = query.solo === "1";
+  return <RoomClient code={code.toUpperCase()} solo={solo} />;
 }
 
 export default function RoomPage(props: PageProps<"/room/[code]">) {

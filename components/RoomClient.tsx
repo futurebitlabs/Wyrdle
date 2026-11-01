@@ -72,7 +72,7 @@ function toRoundInfo(row: RoundStateRow): RoundInfo {
 
 const STATUS_RANK: Record<LetterStatus, number> = { absent: 0, present: 1, correct: 2 };
 
-export function RoomClient({ code }: { code: string }) {
+export function RoomClient({ code, solo = false }: { code: string; solo?: boolean }) {
   const [status, setStatus] = useState<Status>("loading");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [nameInput, setNameInput] = useState("");
@@ -258,6 +258,7 @@ export function RoomClient({ code }: { code: string }) {
   }, [rounds]);
 
   const isGameOver = currentRound?.status === "finished";
+  const isSolo = solo && players.length <= 1;
   const winner = useMemo(
     () => players.find((p) => p.id === currentRound?.winnerPlayerId) ?? null,
     [players, currentRound],
@@ -404,17 +405,22 @@ export function RoomClient({ code }: { code: string }) {
 
       <div className="text-center">
         <p className="text-xs uppercase tracking-wide text-foreground/50">
-          Game key · Round {currentRound?.roundNumber ?? 1}
+          {isSolo ? "Playing solo · " : "Game key · "}Round {currentRound?.roundNumber ?? 1}
         </p>
         <p className="font-mono text-2xl font-bold tracking-widest text-foreground">
           {room.code}
         </p>
+        {isSolo && (
+          <p className="mt-1 text-xs text-foreground/40">Share this key to invite others</p>
+        )}
       </div>
 
       {isGameOver && (
         <div className="flex flex-col items-center gap-3 rounded-lg border border-foreground/10 px-6 py-4 text-center">
           <p className="text-sm text-foreground/80">
-            {winner ? (
+            {isSolo ? (
+              winner ? "You solved it!" : "Out of guesses."
+            ) : winner ? (
               <>
                 <span className="font-semibold">{winner.name}</span> won this round!
               </>
@@ -472,13 +478,15 @@ export function RoomClient({ code }: { code: string }) {
           <Keyboard letterStatuses={letterStatuses} onKey={handleKey} disabled={isGameOver} />
         </div>
 
-        <Leaderboard
-          players={players}
-          guessesByPlayer={guessesByPlayer}
-          winsByPlayer={winsByPlayer}
-          maxGuesses={room.maxGuesses}
-          localPlayerId={player.id}
-        />
+        {!isSolo && (
+          <Leaderboard
+            players={players}
+            guessesByPlayer={guessesByPlayer}
+            winsByPlayer={winsByPlayer}
+            maxGuesses={room.maxGuesses}
+            localPlayerId={player.id}
+          />
+        )}
       </div>
     </div>
   );
