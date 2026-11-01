@@ -117,7 +117,7 @@ export function WendBoard({
 
   return (
     <div
-      className="relative touch-none"
+      className="relative w-full touch-none"
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerUp}
@@ -154,7 +154,7 @@ export function WendBoard({
       </svg>
 
       <div
-        className="relative grid gap-1.5"
+        className="relative grid w-full gap-1.5"
         style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
       >
         {cells.map((row, r) =>
