@@ -8,8 +8,8 @@ import { postJson } from "@/lib/postJson";
 type GameType = "wyrdle" | "wend";
 
 const GAMES: { id: GameType; title: string; description: string }[] = [
-  { id: "wyrdle", title: "Wyrdle", description: "Guess the hidden word before anyone else." },
-  { id: "wend", title: "Wend", description: "Trace adjacent tiles to find every hidden word." },
+  { id: "wyrdle", title: "Fivefold", description: "Guess the hidden word before anyone else." },
+  { id: "wend", title: "Snakeword", description: "Trace adjacent tiles to find every hidden word." },
 ];
 
 export default function Home() {
@@ -97,7 +97,7 @@ export default function Home() {
       <div className="flex flex-1 items-center justify-center bg-background px-4 py-16">
         <div className="w-full max-w-sm space-y-8">
           <div className="text-center">
-            <h1 className="text-4xl font-bold tracking-tight text-foreground">Wyrdle</h1>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground">Wyrdly</h1>
             <p className="mt-2 text-sm text-foreground/60">Pick a game to play.</p>
           </div>
           <div className="space-y-3">

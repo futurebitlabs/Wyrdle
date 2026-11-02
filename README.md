@@ -1,8 +1,8 @@
-<img src="public/logo.svg" alt="Wyrdle" height="48">
+<img src="public/logo.svg" alt="Wyrdly" height="48">
 
-Wyrdle is a multiplayer word-guessing game. One player creates a game and
-gets a 6-character game key; others join with that key and race to guess
-the same secret word.
+Wyrdly is a collection of multiplayer word games (a Wordle-style guessing
+game called Fivefold and Snakeword, a tile-tracing word hunt). One player creates a game and gets
+a 6-character game key; others join with that key and race to solve it.
 
 ## Setup
 
